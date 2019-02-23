@@ -26,17 +26,27 @@ function pathToBounds (accumulator, currentValue) {
 function processElevationResults (map, latGrid, lngGrid, locations) {
   const latHalfGrid = latGrid / 2;
   const lngHalfGrid = lngGrid / 2;
-  const rectangles = locations.map(function (location) {
-    return new google.maps.Rectangle({
-      bounds: {
-        north: location.lat() + latHalfGrid,
-        south: location.lat() - latHalfGrid,
-        east: location.lng() + lngHalfGrid,
-        west: location.lng() - lngHalfGrid
-      },
+  const polygons = locations.map(function (location) {
+    const lat = location.lat();
+    const lng = location.lng();
+    const path = [{
+      lat: lat + latHalfGrid,
+      lng: lng - lngHalfGrid
+    }, {
+      lat: lat + latHalfGrid,
+      lng: lng + lngHalfGrid
+    }, {
+      lat: lat - latHalfGrid,
+      lng: lng + lngHalfGrid
+    }, {
+      lat: lat - latHalfGrid,
+      lng: lng - lngHalfGrid
+    }];
+    return new google.maps.Polygon({
       fillOpacity: 0.5,
       geodesic: true,
       map: map,
+      path,
       strokeWeight: 0
     });
   });
@@ -50,10 +60,10 @@ function processElevationResults (map, latGrid, lngGrid, locations) {
       }
       for (let result of results) {
         const hue = normalise(result.elevation, minElevation, maxElevation, 0, 120);
-        const rectangle = rectangles.find(function (rectangle) {
-          return rectangle.getBounds().contains(result.location);
+        const polygon = polygons.find(function (polygon) {
+          return google.maps.geometry.poly.containsLocation(result.location, polygon);
         });
-        rectangle.setOptions({fillColor: `hsl(${hue}, 50%, 50%)`});
+        polygon.setOptions({fillColor: `hsl(${hue}, 50%, 50%)`});
       }
     }
   };
