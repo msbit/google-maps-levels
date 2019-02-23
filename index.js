@@ -117,9 +117,9 @@ function initMap () {
         });
         const latBound = bounds.north - bounds.south;
         const lngBound = bounds.east - bounds.west;
-        const latGrid = latBound / 16;
+        const latGrid = latBound / 32;
         const latHalfGrid = latGrid / 2;
-        const lngGrid = lngBound / 16;
+        const lngGrid = lngBound / 32;
         const lngHalfGrid = lngGrid / 2;
         const locations = [];
         for (let lat = bounds.south + latHalfGrid; lat < bounds.north; lat += latGrid) {
@@ -155,7 +155,7 @@ function initMap () {
               processElevationResults(results.flat(), polygons);
             });
           }
-        }, 4000);
+        }, 500);
         complete = true;
       }
     }
