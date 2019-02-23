@@ -22,13 +22,16 @@ class Redfearn {
   }
 
   memo (lat, lng, key, callback) {
-    if (this._memo[[lat, lng]] === undefined) {
-      this._memo[[lat, lng]] = {};
+    if (this._memo[lat] === undefined) {
+      this._memo[lat] = {};
     }
-    if (this._memo[[lat, lng]][key] === undefined) {
-      this._memo[[lat, lng]][key] = callback(this);
+    if (this._memo[lat][lng] === undefined) {
+      this._memo[lat][lng] = {};
     }
-    return this._memo[[lat, lng]][key];
+    if (this._memo[lat][lng][key] === undefined) {
+      this._memo[lat][lng][key] = callback(this);
+    }
+    return this._memo[lat][lng][key];
   }
 
   zone (lat, lng) {
