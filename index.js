@@ -15,6 +15,25 @@ function normalise (input, inputMin, inputMax, outputMin, outputMax) {
   return ((input - inputMin) * ratio) + outputMin;
 }
 
+function partiallyContains (location, polygon, latGrid, lngGrid) {
+  const lat = location.lat();
+  const lng = location.lng();
+  const latHalfGrid = latGrid / 2;
+  const lngHalfGrid = lngGrid / 2;
+  const corners = [
+    new google.maps.LatLng(lat + latHalfGrid, lng - lngHalfGrid),
+    new google.maps.LatLng(lat + latHalfGrid, lng + lngHalfGrid),
+    new google.maps.LatLng(lat - latHalfGrid, lng + lngHalfGrid),
+    new google.maps.LatLng(lat - latHalfGrid, lng - lngHalfGrid)
+  ];
+  for (let corner of corners) {
+    if (google.maps.geometry.poly.containsLocation(corner, polygon)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function pathToBounds (accumulator, currentValue) {
   accumulator.north = Math.max(accumulator.north, currentValue.lat);
   accumulator.south = Math.min(accumulator.south, currentValue.lat);
@@ -107,7 +126,7 @@ function initMap () {
         for (let lat = bounds.south + latHalfGrid; lat < bounds.north; lat += latGrid) {
           for (let lng = bounds.west + lngHalfGrid; lng < bounds.east; lng += lngGrid) {
             const location = new google.maps.LatLng(lat, lng);
-            if (google.maps.geometry.poly.containsLocation(location, polygon)) {
+            if (partiallyContains(location, polygon, latGrid, lngGrid)) {
               locations.push(location);
             }
           }
