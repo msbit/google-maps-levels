@@ -42,10 +42,26 @@ function pathToBounds (accumulator, currentValue) {
   return accumulator;
 }
 
-function processElevationResults (map, latGrid, lngGrid, locations) {
+function processElevationResults (results, polygons) {
+  let maxElevation = Number.MIN_VALUE;
+  let minElevation = Number.MAX_VALUE;
+  for (let result of results) {
+    maxElevation = Math.max(maxElevation, result.elevation);
+    minElevation = Math.min(minElevation, result.elevation);
+  }
+  for (let result of results) {
+    const hue = normalise(result.elevation, minElevation, maxElevation, 0, 120);
+    const polygon = polygons.find(function (polygon) {
+      return google.maps.geometry.poly.containsLocation(result.location, polygon);
+    });
+    polygon.setOptions({fillColor: `hsl(${hue}, 50%, 50%)`});
+  }
+}
+
+function createPolygons (map, latGrid, lngGrid, locations) {
   const latHalfGrid = latGrid / 2;
   const lngHalfGrid = lngGrid / 2;
-  const polygons = locations.map(function (location) {
+  return locations.map(function (location) {
     const lat = location.lat();
     const lng = location.lng();
     const path = [{
@@ -69,23 +85,6 @@ function processElevationResults (map, latGrid, lngGrid, locations) {
       strokeWeight: 0
     });
   });
-  return function (results, status) {
-    if (status === google.maps.ElevationStatus.OK) {
-      let maxElevation = Number.MIN_VALUE;
-      let minElevation = Number.MAX_VALUE;
-      for (let result of results) {
-        maxElevation = Math.max(maxElevation, result.elevation);
-        minElevation = Math.min(minElevation, result.elevation);
-      }
-      for (let result of results) {
-        const hue = normalise(result.elevation, minElevation, maxElevation, 0, 120);
-        const polygon = polygons.find(function (polygon) {
-          return google.maps.geometry.poly.containsLocation(result.location, polygon);
-        });
-        polygon.setOptions({fillColor: `hsl(${hue}, 50%, 50%)`});
-      }
-    }
-  };
 }
 
 function initMap () {
@@ -131,7 +130,26 @@ function initMap () {
             }
           }
         }
-        service.getElevationForLocations({locations}, processElevationResults(map, latGrid, lngGrid, locations));
+        const batchSize = 512;
+        const polygons = createPolygons(map, latGrid, lngGrid, locations);
+        const promises = [];
+        for (let i = 0; i < locations.length; i += batchSize) {
+          const partialLocations = locations.slice(i, i + batchSize);
+          promises.push(new Promise(function (resolve, reject) {
+            service.getElevationForLocations({
+              locations: partialLocations
+            }, function (results, status) {
+              if (status === google.maps.ElevationStatus.OK) {
+                resolve(results);
+              } else {
+                reject(status);
+              }
+            });
+          }));
+        }
+        Promise.all(promises).then(function (results) {
+          processElevationResults(results.flat(), polygons);
+        });
         complete = true;
       }
     }
