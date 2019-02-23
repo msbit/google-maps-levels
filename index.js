@@ -98,7 +98,7 @@ function initMap () {
   const path = [];
   const polygon = new google.maps.Polygon({
     geodesic: true,
-    map: map,
+    map,
     fillOpacity: 0.0,
     strokeColor: '#000000',
     strokeOpacity: 1.0,
