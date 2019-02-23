@@ -93,8 +93,9 @@ function initMap () {
         const locations = [];
         for (let lat = bounds.south + latHalfGrid; lat < bounds.north; lat += latGrid) {
           for (let lng = bounds.west + lngHalfGrid; lng < bounds.east; lng += lngGrid) {
-            if (google.maps.geometry.poly.containsLocation(new google.maps.LatLng(lat, lng), polygon)) {
-              locations.push({lat, lng});
+            const location = new google.maps.LatLng(lat, lng);
+            if (google.maps.geometry.poly.containsLocation(location, polygon)) {
+              locations.push(location);
             }
           }
         }
