@@ -133,23 +133,29 @@ function initMap () {
         const batchSize = 512;
         const polygons = createPolygons(map, latGrid, lngGrid, locations);
         const promises = [];
-        for (let i = 0; i < locations.length; i += batchSize) {
-          const partialLocations = locations.slice(i, i + batchSize);
-          promises.push(new Promise(function (resolve, reject) {
-            service.getElevationForLocations({
-              locations: partialLocations
-            }, function (results, status) {
-              if (status === google.maps.ElevationStatus.OK) {
-                resolve(results);
-              } else {
-                reject(status);
-              }
+        let batchStart = 0;
+        const intervalId = window.setInterval(function () {
+          if (batchStart < locations.length) {
+            const partialLocations = locations.slice(batchStart, batchStart + batchSize);
+            promises.push(new Promise(function (resolve, reject) {
+              service.getElevationForLocations({
+                locations: partialLocations
+              }, function (results, status) {
+                if (status === google.maps.ElevationStatus.OK) {
+                  resolve(results);
+                } else {
+                  reject(status);
+                }
+              });
+            }));
+            batchStart += batchSize;
+          } else {
+            window.clearInterval(intervalId);
+            Promise.all(promises).then(function (results) {
+              processElevationResults(results.flat(), polygons);
             });
-          }));
-        }
-        Promise.all(promises).then(function (results) {
-          processElevationResults(results.flat(), polygons);
-        });
+          }
+        }, 4000);
         complete = true;
       }
     }
