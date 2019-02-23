@@ -23,9 +23,23 @@ function pathToBounds (accumulator, currentValue) {
   return accumulator;
 }
 
-function processElevationResults (map, latGrid, lngGrid) {
+function processElevationResults (map, latGrid, lngGrid, locations) {
   const latHalfGrid = latGrid / 2;
   const lngHalfGrid = lngGrid / 2;
+  const rectangles = locations.map(function (location) {
+    return new google.maps.Rectangle({
+      bounds: {
+        north: location.lat() + latHalfGrid,
+        south: location.lat() - latHalfGrid,
+        east: location.lng() + lngHalfGrid,
+        west: location.lng() - lngHalfGrid
+      },
+      fillOpacity: 0.5,
+      geodesic: true,
+      map: map,
+      strokeWeight: 0
+    });
+  });
   return function (results, status) {
     if (status === google.maps.ElevationStatus.OK) {
       let maxElevation = Number.MIN_VALUE;
@@ -34,24 +48,13 @@ function processElevationResults (map, latGrid, lngGrid) {
         maxElevation = Math.max(maxElevation, result.elevation);
         minElevation = Math.min(minElevation, result.elevation);
       }
-      results.map(function (result) {
+      for (let result of results) {
         const hue = normalise(result.elevation, minElevation, maxElevation, 0, 120);
-        const location = result.location.toJSON();
-        return new google.maps.Rectangle({
-          bounds: {
-            north: location.lat + latHalfGrid,
-            south: location.lat - latHalfGrid,
-            east: location.lng + lngHalfGrid,
-            west: location.lng - lngHalfGrid
-          },
-          map: map,
-          fillColor: `hsl(${hue}, 50%, 50%)`,
-          fillOpacity: 0.5,
-          strokeColor: `hsl(${hue}, 50%, 50%)`,
-          strokeOpacity: 0.5,
-          strokeWeight: 1
+        const rectangle = rectangles.find(function (rectangle) {
+          return rectangle.getBounds().contains(result.location);
         });
-      });
+        rectangle.setOptions({fillColor: `hsl(${hue}, 50%, 50%)`});
+      }
     }
   };
 }
@@ -99,7 +102,7 @@ function initMap () {
             }
           }
         }
-        service.getElevationForLocations({locations}, processElevationResults(map, latGrid, lngGrid));
+        service.getElevationForLocations({locations}, processElevationResults(map, latGrid, lngGrid, locations));
         complete = true;
       }
     }
