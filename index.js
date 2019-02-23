@@ -8,6 +8,54 @@ window.addEventListener('load', function () {
   head.appendChild(script);
 });
 
+function normalise (input, inputMin, inputMax, outputMin, outputMax) {
+  const inputRange = inputMax - inputMin;
+  const outputRange = outputMax - outputMin;
+  const ratio = outputRange / inputRange;
+  return ((input - inputMin) * ratio) + outputMin;
+}
+
+function pathToBounds (accumulator, currentValue) {
+  accumulator.north = Math.max(accumulator.north, currentValue.lat);
+  accumulator.south = Math.min(accumulator.south, currentValue.lat);
+  accumulator.east = Math.max(accumulator.east, currentValue.lng);
+  accumulator.west = Math.min(accumulator.west, currentValue.lng);
+  return accumulator;
+}
+
+function processElevationResults (map, latGrid, lngGrid) {
+  const latHalfGrid = latGrid / 2;
+  const lngHalfGrid = lngGrid / 2;
+  return function (results, status) {
+    if (status === google.maps.ElevationStatus.OK) {
+      let maxElevation = Number.MIN_VALUE;
+      let minElevation = Number.MAX_VALUE;
+      for (let result of results) {
+        maxElevation = Math.max(maxElevation, result.elevation);
+        minElevation = Math.min(minElevation, result.elevation);
+      }
+      results.map(function (result) {
+        const hue = normalise(result.elevation, minElevation, maxElevation, 0, 120);
+        const location = result.location.toJSON();
+        return new google.maps.Rectangle({
+          bounds: {
+            north: location.lat + latHalfGrid,
+            south: location.lat - latHalfGrid,
+            east: location.lng + lngHalfGrid,
+            west: location.lng - lngHalfGrid
+          },
+          map: map,
+          fillColor: `hsl(${hue}, 50%, 50%)`,
+          fillOpacity: 0.5,
+          strokeColor: `hsl(${hue}, 50%, 50%)`,
+          strokeOpacity: 0.5,
+          strokeWeight: 1
+        });
+      });
+    }
+  };
+}
+
 function initMap () {
   const service = new google.maps.ElevationService();
   const map = new google.maps.Map(document.getElementById('map'), {
@@ -30,13 +78,7 @@ function initMap () {
       path.push(event.latLng.toJSON());
       polygon.setPath(path);
       if (path.length > 3) {
-        const bounds = path.reduce(function (accumulator, currentValue) {
-          accumulator.north = Math.max(accumulator.north, currentValue.lat);
-          accumulator.south = Math.min(accumulator.south, currentValue.lat);
-          accumulator.east = Math.max(accumulator.east, currentValue.lng);
-          accumulator.west = Math.min(accumulator.west, currentValue.lng);
-          return accumulator;
-        }, {
+        const bounds = path.reduce(pathToBounds, {
           north: -90,
           south: 90,
           east: -180,
@@ -56,43 +98,9 @@ function initMap () {
             }
           }
         }
-        service.getElevationForLocations({locations}, function (results, status) {
-          if (status === google.maps.ElevationStatus.OK) {
-            let maxElevation = Number.MIN_VALUE;
-            let minElevation = Number.MAX_VALUE;
-            for (let result of results) {
-              maxElevation = Math.max(maxElevation, result.elevation);
-              minElevation = Math.min(minElevation, result.elevation);
-            }
-            results.map(function (result) {
-              const hue = normalise(result.elevation, minElevation, maxElevation, 0, 120);
-              const location = result.location.toJSON();
-              return new google.maps.Rectangle({
-                bounds: {
-                  north: location.lat + latHalfGrid,
-                  south: location.lat - latHalfGrid,
-                  east: location.lng + lngHalfGrid,
-                  west: location.lng - lngHalfGrid
-                },
-                map: map,
-                fillColor: `hsl(${hue}, 50%, 50%)`,
-                fillOpacity: 0.5,
-                strokeColor: `hsl(${hue}, 50%, 50%)`,
-                strokeOpacity: 0.5,
-                strokeWeight: 1
-              });
-            });
-          }
-        });
+        service.getElevationForLocations({locations}, processElevationResults(map, latGrid, lngGrid));
         complete = true;
       }
     }
   });
-}
-
-function normalise (input, inputMin, inputMax, outputMin, outputMax) {
-  const inputRange = inputMax - inputMin;
-  const outputRange = outputMax - outputMin;
-  const ratio = outputRange / inputRange;
-  return ((input - inputMin) * ratio) + outputMin;
 }
