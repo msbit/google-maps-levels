@@ -1,4 +1,4 @@
-class Redfearns {
+class Redfearn {
   constructor (centralScaleFactor, falseEasting, falseNorthing, inverseFlattening, semiMajorAxis, zone1CentralMeridian, zoneWidth) {
     this.centralScaleFactor = centralScaleFactor;
     this.falseEasting = falseEasting;
