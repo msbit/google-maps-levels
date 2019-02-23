@@ -1,119 +1,239 @@
-const cC3 = 6378137; //Semi major axis (a) (m)
-const cC4 = 298.257222101; //Inverse flattening (1/f)
-const cC20 = 500000; //False easting (m)
-const cC21 = 10000000; //False northing (m)
-const cC22 = 0.9996; //Central Scale factor (K0)
-const cC23 = 6; //Zone width (degrees)
-const cC24 = -177; //Longitude of the central meridian of zone 1(degrees)
+class Redfearns {
+  constructor (centralScaleFactor, falseEasting, falseNorthing, inverseFlattening, semiMajorAxis, zone1CentralMeridian, zoneWidth) {
+    this.centralScaleFactor = centralScaleFactor;
+    this.falseEasting = falseEasting;
+    this.falseNorthing = falseNorthing;
+    this.inverseFlattening = inverseFlattening;
+    this.semiMajorAxis = semiMajorAxis;
+    this.zone1CentralMeridian = zone1CentralMeridian;
+    this.zoneWidth = zoneWidth;
 
-function calculateGeographicToGrid(lat, lng) {
-  const cC7 = 1 / cC4; //Flattening (f)
-  const cC8 = (2 * cC7) - Math.pow(cC7, 2); //Eccentricity (e2)
-  const cC25 = cC24 - (1.5 * cC23); //Longitude of western edge of zone zero
-  const cC26 = cC25 + (cC23 / 2); //Central meridian of zone zero
-  
-  const L4 = lng; //Longitude
-  const F4 = lat; //Latitude
-  const C5 = (L4 - cC25) / cC23; //Zone no. (real number)
-  const C7 = Math.floor(C5); //Zone
-  const C6 = (C7 * cC23) + cC26; //Central Meridian
-  
-  const K10 = cC8; //e2
-  const K11 = K10 * K10; //e4
-  const K12 = K11 * K10; //e6
-  const G4 = (F4 / 180) * Math.PI; //Latitude (radians)
-  const E9 = Math.sin(G4); //Sin latitude (sinj)
-  const E10 = Math.sin(2 * G4); //sin(2j)
-  const E11 = Math.sin(4 * G4); //sin(4j)
-  const E12 = Math.sin(6 * G4); //sin(6j)
-  const K16 = cC3 / Math.pow(1 - (K10 * Math.pow(E9, 2)), 0.5); //Nu (n)
-  const L6 = L4 - C6; //?
-  const M6 = (L6 / 180) * Math.PI; //?
-  
-  const E22 = Math.cos(G4); //Cos latitude ^ 1
-  const E23 = E22 * E22; //Cos latitude ^ 2
-  const E24 = E23 * E22; //Cos latitude ^ 3
-  const E25 = E24 * E22; //Cos latitude ^ 4
-  const E26 = E25 * E22; //Cos latitude ^ 5
-  const E27 = E26 * E22; //Cos latitude ^ 6
-  const E28 = E27 * E22; //Cos latitude ^ 7
-  
-  const H22 = M6 //Diff long (w) ^ 1
-  const H23 = H22 * H22; //Diff long (w) ^ 2
-  const H24 = H23 * H22; //Diff long (w) ^ 3
-  const H25 = H24 * H22; //Diff long (w) ^ 4
-  const H26 = H25 * H22; //Diff long (w) ^ 5
-  const H27 = H26 * H22; //Diff long (w) ^ 6
-  const H28 = H27 * H22; //Diff long (w) ^ 7
-  const H29 = H28 * H22; //Diff long (w) ^ 8
-  
-  const K22 = Math.tan(G4); //Tan latitude ^ 1
-  const K23 = K22 * K22; //Tan latitude ^ 2
-  const K24 = K23 * K22; //Tan latitude ^ 3
-  const K25 = K24 * K22; //Tan latitude ^ 4
-  const K26 = K25 * K22; //Tan latitude ^ 5
-  const K27 = K26 * K22; //Tan latitude ^ 6
-  const K28 = K27 * K22; //Tan latitude ^ 7
+    this.flattening = 1 / this.inverseFlattening;
+    this.eccentricity2 = (2 * this.flattening) - Math.pow(this.flattening, 2);
+    this.zone0WesternEdge = this.zone1CentralMeridian - (1.5 * this.zoneWidth);
+    this.zone0CentralMeridian = this.zone0WesternEdge + (this.zoneWidth / 2);
 
-  const K15 = cC3 * (1 - K10) / Math.pow(1 - (K10 * Math.pow(E9, 2)), 1.5); //Rho(r)
-  
-  const M22 = K16 / K15; //Psi (y)= Nu/Rho ^ 1
-  const M23 = M22 * M22; //Psi (y)= Nu/Rho ^ 2
-  const M24 = M23 * M22; //Psi (y)= Nu/Rho ^ 3
-  const M25 = M24 * M22; //Psi (y)= Nu/Rho ^ 4
-  
-  const E33 = K16 * H22 * E22; //1st term
-  const E34 = K16 * H24 * E24 * (M22 - K23) / 6; //3rd term
-  const E35 = K16 * H26 * E26 * (4 * M24 * (1 - 6 * K23) + M23 * (1 + 8 * K23) - M22 * (2 * K23) + K25) / 120; //3rd term
-  const E36 = K16 * H28 * E28 * (61 - 479 * K23 + 179 * K25 - K27) / 5040; //4th term
-  const E37 = E33 + E34 + E35 + E36; //Sum
-  const E38 = cC22 * E37; //Sum*K0
-  const E39 = cC20; //False Origin
-  const E40 = E38 + E39; //Easting
+    this.A0 = 1 - (this.eccentricity2 / 4) - ((3 * Math.pow(this.eccentricity2, 2)) / 64) - ((5 * Math.pow(this.eccentricity2, 3)) / 256);
+    this.A2 = (3 / 8) * (this.eccentricity2 + (Math.pow(this.eccentricity2, 2) / 4) + ((15 * Math.pow(this.eccentricity2, 3)) / 128));
+    this.A4 = (15 / 256) * (Math.pow(this.eccentricity2, 2) + ((3 * Math.pow(this.eccentricity2, 3)) / 4));
+    this.A6 = (35 * Math.pow(this.eccentricity2, 3)) / 3072;
 
-  const M9 = 1 - (K10 / 4) - ((3 * K11) / 64) - ((5 * K12) / 256); //A0
-  const E15 = cC3 * M9 * G4; //1st term
-  const M10 = (3 / 8) * (K10 + (K11 / 4) + ((15 * K12) / 128)); //A2
-  const E16 = -cC3 * M10 * E10; //2nd term
-  const M11 = (15 / 256) * (K11 + ((3 * K12) / 4)); //A4
-  const E17 = cC3 * M11 * E11; //3rd term
-  const M12 = (35 * K12) / 3072; //A6
-  const E18 = -cC3 * M12 * E12; //4th term
-  const E19 = E15 + E16 + E17 + E18; //sum (meridian dist)
-  const K32 = E19; //Meridian Dist
-  const K33 = K16 * E9 * H23 * E22 / 2; //1st term
-  const K34 = K16 * E9 * H25 * E24 * (4 * M23 + M22 - K23) / 24; //2nd term
-  const K35 = K16 * E9 * H27 * E26 * (8 * M25 * (11 - 24 * K23) - 28 * M24 * (1 - 6 * K23) + M23 * (1 - 32 * K23) - M22 * (2 * K23) + K25) / 720;  // 3rd term
-  const K36 = K16 * E9 * H29 * E28 * (1385 - 3111 * K23 + 543 * K25 - K27) / 40320; //4th term
-  const K37 = K32 + K33 + K34 + K35 + K36; //Sum
-  const K38 = cC22 * K37; //Sum*K0
-  const K39 = cC21; //False Origin
-  const K40 = K38 + K39 //Northing
+    this._memo = {};
+  }
 
-  const G42 = -E9 * H22; //1st term
-  const G43 = -E9 * H24 * E23 * (2 * M23 - M22) / 3; //2nd term
-  const G44 = -E9 * H26 * E25 * (M25 * (11 - 24 * K23) - M24 * (11 - 36 * K23) + 2 * M23 * (1 - 7 * K23) + M22 * K23) / 15; //3rd term
-  const G45 = E9 * H28 * E27 * (17 - 26 * K23 + 2 * K25) / 315; //4th term
-  const G47 = G42 + G43 + G44 + G45; // Grid convergence (radians)
-  const F47 = (G47 / Math.PI) * 180; //Grid convergence (degrees)
+  memo (lat, lng, key, callback) {
+    if (this._memo[[lat, lng]] === undefined) {
+      this._memo[[lat, lng]] = {};
+    }
+    if (this._memo[[lat, lng]][key] === undefined) {
+      this._memo[[lat, lng]][key] = callback(this);
+    }
+    return this._memo[[lat, lng]][key];
+  }
 
-  const K42 = 1 + (H23 * E23 * M22) / 2; //1st term
-  const K43 = H25 * E25 * (4 * M24 * (1 - 6 * K23) + M23 * (1 + 24 * K23) - 4 * M22 * K23) / 24; //2nd term
-  const K44 = H27 * E27 * (61 - 148 * K23 + 16 * K25) / 720; //3rd term
-  const K45 = K42 + K43 + K44; //Sum
-  const K47 = cC22 * K45; //Point Scale
+  zone (lat, lng) {
+    return this.memo(lat, lng, 'zone', function (self) {
+      return Math.floor((lng - self.zone0WesternEdge) / self.zoneWidth);
+    });
+  }
 
-  const zone = C7;
-  const easting = E40;
-  const northing = K40;
-  const gridConvergence = F47;
-  const pointScale = K47;
+  latRad (lat, lng) {
+    return this.memo(lat, lng, 'latRad', function () {
+      return (lat / 180) * Math.PI;
+    });
+  }
 
-  return {
-    zone,
-    easting,
-    northing,
-    gridConvergence,
-    pointScale
-  };
+  sinLat (lat, lng) {
+    return this.memo(lat, lng, 'sinLat', function (self) {
+      return Math.sin(self.latRad(lat, lng));
+    });
+  }
+
+  sin2Lat (lat, lng) {
+    return this.memo(lat, lng, 'sin2Lat', function (self) {
+      return Math.sin(2 * self.latRad(lat, lng));
+    });
+  }
+
+  sin4Lat (lat, lng) {
+    return this.memo(lat, lng, 'sin4Lat', function (self) {
+      return Math.sin(4 * self.latRad(lat, lng));
+    });
+  }
+
+  sin6Lat (lat, lng) {
+    return this.memo(lat, lng, 'sin6Lat', function (self) {
+      return Math.sin(6 * self.latRad(lat, lng));
+    });
+  }
+
+  centralMeridian (lat, lng) {
+    return this.memo(lat, lng, 'centralMeridian', function (self) {
+      return (self.zone(lat, lng) * self.zoneWidth) + self.zone0CentralMeridian;
+    });
+  }
+
+  nu (lat, lng) {
+    return this.memo(lat, lng, 'nu', function (self) {
+      return self.semiMajorAxis / Math.pow(1 - (self.eccentricity2 * Math.pow(self.sinLat(lat, lng), 2)), 0.5);
+    });
+  }
+
+  rho (lat, lng) {
+    return this.memo(lat, lng, 'rho', function (self) {
+      return self.semiMajorAxis * (1 - self.eccentricity2) / Math.pow(1 - (self.eccentricity2 * Math.pow(self.sinLat(lat, lng), 2)), 1.5);
+    });
+  }
+
+  psi (lat, lng) {
+    return this.memo(lat, lng, 'psi', function (self) {
+      return self.nu(lat, lng) / self.rho(lat, lng);
+    });
+  }
+
+  cosLat (lat, lng) {
+    return this.memo(lat, lng, 'cosLat', function (self) {
+      return Math.cos(self.latRad(lat, lng));
+    });
+  }
+
+  tanLat (lat, lng) {
+    return this.memo(lat, lng, 'tanLat', function (self) {
+      return Math.tan(self.latRad(lat, lng));
+    });
+  }
+
+  lngDiff (lat, lng) {
+    return this.memo(lat, lng, 'lngDiff', function (self) {
+      return lng - self.centralMeridian(lat, lng);
+    });
+  }
+
+  lngDiffRad (lat, lng) {
+    return this.memo(lat, lng, 'lngDiffRad', function (self) {
+      return (self.lngDiff(lat, lng) / 180) * Math.PI;
+    });
+  }
+
+  easting (lat, lng) {
+    return this.memo(lat, lng, 'easting', function (self) {
+      const nu = self.nu(lat, lng);
+      const lngDiffRad = self.lngDiffRad(lat, lng);
+      const cosLat = self.cosLat(lat, lng);
+      const psi = self.psi(lat, lng);
+      const tanLat = self.tanLat(lat, lng);
+
+      const cosLat3 = Math.pow(cosLat, 3);
+      const cosLat5 = Math.pow(cosLat, 5);
+      const cosLat7 = Math.pow(cosLat, 7);
+      const lngDiffRad3 = Math.pow(lngDiffRad, 3);
+      const lngDiffRad5 = Math.pow(lngDiffRad, 5);
+      const lngDiffRad7 = Math.pow(lngDiffRad, 7);
+      const psi2 = Math.pow(psi, 2);
+      const psi3 = Math.pow(psi, 3);
+      const tanLat2 = Math.pow(tanLat, 2);
+      const tanLat4 = Math.pow(tanLat, 4);
+      const tanLat6 = Math.pow(tanLat, 6);
+
+      const first = nu * lngDiffRad * cosLat;
+      const second = nu * lngDiffRad3 * cosLat3 * (psi - tanLat2) / 6;
+      const third = nu * lngDiffRad5 * cosLat5 * (4 * psi3 * (1 - 6 * tanLat2) + psi2 * (1 + 8 * tanLat2) - psi * (2 * tanLat2) + tanLat4) / 120;
+      const fourth = nu * lngDiffRad7 * cosLat7 * (61 - 479 * tanLat2 + 179 * tanLat4 - tanLat6) / 5040;
+      return self.centralScaleFactor * (first + second + third + fourth) + self.falseEasting;
+    });
+  }
+
+  meridianDistance (lat, lng) {
+    return this.memo(lat, lng, 'meridianDistance', function (self) {
+      const first = self.semiMajorAxis * self.A0 * self.latRad(lat, lng);
+      const second = -self.semiMajorAxis * self.A2 * self.sin2Lat(lat, lng);
+      const third = self.semiMajorAxis * self.A4 * self.sin4Lat(lat, lng);
+      const fourth = -self.semiMajorAxis * self.A6 * self.sin6Lat(lat, lng);
+      return first + second + third + fourth;
+    });
+  }
+
+  northing (lat, lng) {
+    return this.memo(lat, lng, 'northing', function (self) {
+      const cosLat = self.cosLat(lat, lng);
+      const lngDiffRad = self.lngDiffRad(lat, lng);
+      const nu = self.nu(lat, lng);
+      const psi = self.psi(lat, lng);
+      const sinLat = self.sinLat(lat, lng);
+      const tanLat = self.tanLat(lat, lng);
+
+      const cosLat3 = Math.pow(cosLat, 3);
+      const cosLat5 = Math.pow(cosLat, 5);
+      const cosLat7 = Math.pow(cosLat, 7);
+      const lngDiffRad2 = Math.pow(lngDiffRad, 2);
+      const lngDiffRad4 = Math.pow(lngDiffRad, 4);
+      const lngDiffRad6 = Math.pow(lngDiffRad, 6);
+      const lngDiffRad8 = Math.pow(lngDiffRad, 8);
+      const psi2 = Math.pow(psi, 2);
+      const psi3 = Math.pow(psi, 3);
+      const psi4 = Math.pow(psi, 4);
+      const tanLat2 = Math.pow(tanLat, 2);
+      const tanLat4 = Math.pow(tanLat, 4);
+      const tanLat6 = Math.pow(tanLat, 6);
+
+      const first = nu * sinLat * lngDiffRad2 * cosLat / 2;
+      const second = nu * sinLat * lngDiffRad4 * cosLat3 * (4 * psi2 + psi - tanLat2) / 24;
+      const third = nu * sinLat * lngDiffRad6 * cosLat5 * (8 * psi4 * (11 - 24 * tanLat2) - 28 * psi3 * (1 - 6 * tanLat2) + psi2 * (1 - 32 * tanLat) - psi * (2 * tanLat2) + tanLat4) / 720;
+      const fourth = nu * sinLat * lngDiffRad8 * cosLat7 * (1385 - 3111 * tanLat2 + 543 * tanLat4 - tanLat6) / 40320;
+      return self.centralScaleFactor * (self.meridianDistance(lat, lng) + first + second + third + fourth) + self.falseNorthing;
+    });
+  }
+
+  gridConvergence (lat, lng) {
+    return this.memo(lat, lng, 'gridConvergence', function (self) {
+      const cosLat = self.cosLat(lat, lng);
+      const lngDiffRad = self.lngDiffRad(lat, lng);
+      const psi = self.psi(lat, lng);
+      const sinLat = self.sinLat(lat, lng);
+      const tanLat = self.tanLat(lat, lng);
+
+      const cosLat2 = Math.pow(cosLat, 2);
+      const cosLat4 = Math.pow(cosLat, 4);
+      const cosLat6 = Math.pow(cosLat, 6);
+      const lngDiffRad3 = Math.pow(lngDiffRad, 3);
+      const lngDiffRad5 = Math.pow(lngDiffRad, 5);
+      const lngDiffRad7 = Math.pow(lngDiffRad, 7);
+      const psi2 = Math.pow(psi, 2);
+      const psi3 = Math.pow(psi, 3);
+      const psi4 = Math.pow(psi, 4);
+      const tanLat2 = Math.pow(tanLat, 2);
+      const tanLat4 = Math.pow(tanLat, 4);
+
+      const first = -sinLat * lngDiffRad;
+      const second = -sinLat * lngDiffRad3 * cosLat2 * (2 * psi2 - psi) / 3;
+      const third = -sinLat * lngDiffRad5 * cosLat4 * (psi4 * (11 - 24 * tanLat2) - psi3 * (11 - 36 * tanLat2) + 2 * psi2 * (1 - 7 * tanLat2) + psi * tanLat2) / 15;
+      const fourth = sinLat * lngDiffRad7 * cosLat6 * (17 - 26 * tanLat2 + 2 * tanLat4) / 315;
+      return ((first + second + third + fourth) / Math.PI) * 180;
+    });
+  }
+
+  pointScaleFactor (lat, lng) {
+    return this.memo(lat, lng, 'pointScaleFactor', function (self) {
+      const cosLat = self.cosLat(lat, lng);
+      const tanLat = self.tanLat(lat, lng);
+      const lngDiffRad = self.lngDiffRad(lat, lng);
+      const psi = self.psi(lat, lng);
+
+      const cosLat2 = Math.pow(cosLat, 2);
+      const cosLat4 = Math.pow(cosLat, 4);
+      const cosLat6 = Math.pow(cosLat, 6);
+      const lngDiffRad2 = Math.pow(lngDiffRad, 2);
+      const lngDiffRad4 = Math.pow(lngDiffRad, 4);
+      const lngDiffRad6 = Math.pow(lngDiffRad, 6);
+      const psi2 = Math.pow(psi, 2);
+      const psi3 = Math.pow(psi, 3);
+      const tanLat2 = Math.pow(tanLat, 2);
+      const tanLat4 = Math.pow(tanLat, 4);
+
+      const first = 1 + (lngDiffRad2 * cosLat2 * psi) / 2;
+      const second = lngDiffRad4 * cosLat4 * (4 * psi3 * (1 - 6 * tanLat2) + psi2 * (1 + 24 * tanLat2) - 4 * psi * tanLat2) / 24;
+      const third = lngDiffRad6 * cosLat6 * (61 - 148 * tanLat2 + 16 * tanLat4) / 720;
+      return self.centralScaleFactor * (first + second + third);
+    });
+  }
 }
