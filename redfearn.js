@@ -35,91 +35,63 @@ class Redfearn {
   }
 
   zone (lat, lng) {
-    return this.memo(lat, lng, 'zone', function (self) {
-      return Math.floor((lng - self.zone0WesternEdge) / self.zoneWidth);
-    });
+    return this.memo(lat, lng, 'zone', (self) => Math.floor((lng - self.zone0WesternEdge) / self.zoneWidth));
   }
 
   latRad (lat, lng) {
-    return this.memo(lat, lng, 'latRad', function () {
-      return (lat / 180) * Math.PI;
-    });
+    return this.memo(lat, lng, 'latRad', () => (lat / 180) * Math.PI);
   }
 
   sinLat (lat, lng) {
-    return this.memo(lat, lng, 'sinLat', function (self) {
-      return Math.sin(self.latRad(lat, lng));
-    });
+    return this.memo(lat, lng, 'sinLat', (self) => Math.sin(self.latRad(lat, lng)));
   }
 
   sin2Lat (lat, lng) {
-    return this.memo(lat, lng, 'sin2Lat', function (self) {
-      return Math.sin(2 * self.latRad(lat, lng));
-    });
+    return this.memo(lat, lng, 'sin2Lat', (self) => Math.sin(2 * self.latRad(lat, lng)));
   }
 
   sin4Lat (lat, lng) {
-    return this.memo(lat, lng, 'sin4Lat', function (self) {
-      return Math.sin(4 * self.latRad(lat, lng));
-    });
+    return this.memo(lat, lng, 'sin4Lat', (self) => Math.sin(4 * self.latRad(lat, lng)));
   }
 
   sin6Lat (lat, lng) {
-    return this.memo(lat, lng, 'sin6Lat', function (self) {
-      return Math.sin(6 * self.latRad(lat, lng));
-    });
+    return this.memo(lat, lng, 'sin6Lat', (self) => Math.sin(6 * self.latRad(lat, lng)));
   }
 
   centralMeridian (lat, lng) {
-    return this.memo(lat, lng, 'centralMeridian', function (self) {
-      return (self.zone(lat, lng) * self.zoneWidth) + self.zone0CentralMeridian;
-    });
+    return this.memo(lat, lng, 'centralMeridian', (self) => (self.zone(lat, lng) * self.zoneWidth) + self.zone0CentralMeridian);
   }
 
   nu (lat, lng) {
-    return this.memo(lat, lng, 'nu', function (self) {
-      return self.semiMajorAxis / Math.pow(1 - (self.eccentricity2 * Math.pow(self.sinLat(lat, lng), 2)), 0.5);
-    });
+    return this.memo(lat, lng, 'nu', (self) => self.semiMajorAxis / Math.pow(1 - (self.eccentricity2 * Math.pow(self.sinLat(lat, lng), 2)), 0.5));
   }
 
   rho (lat, lng) {
-    return this.memo(lat, lng, 'rho', function (self) {
-      return self.semiMajorAxis * (1 - self.eccentricity2) / Math.pow(1 - (self.eccentricity2 * Math.pow(self.sinLat(lat, lng), 2)), 1.5);
-    });
+    return this.memo(lat, lng, 'rho', (self) => self.semiMajorAxis * (1 - self.eccentricity2) / Math.pow(1 - (self.eccentricity2 * Math.pow(self.sinLat(lat, lng), 2)), 1.5));
   }
 
   psi (lat, lng) {
-    return this.memo(lat, lng, 'psi', function (self) {
-      return self.nu(lat, lng) / self.rho(lat, lng);
-    });
+    return this.memo(lat, lng, 'psi', (self) => self.nu(lat, lng) / self.rho(lat, lng));
   }
 
   cosLat (lat, lng) {
-    return this.memo(lat, lng, 'cosLat', function (self) {
-      return Math.cos(self.latRad(lat, lng));
-    });
+    return this.memo(lat, lng, 'cosLat', (self) => Math.cos(self.latRad(lat, lng)));
   }
 
   tanLat (lat, lng) {
-    return this.memo(lat, lng, 'tanLat', function (self) {
-      return Math.tan(self.latRad(lat, lng));
-    });
+    return this.memo(lat, lng, 'tanLat', (self) => Math.tan(self.latRad(lat, lng)));
   }
 
   lngDiff (lat, lng) {
-    return this.memo(lat, lng, 'lngDiff', function (self) {
-      return lng - self.centralMeridian(lat, lng);
-    });
+    return this.memo(lat, lng, 'lngDiff', (self) => lng - self.centralMeridian(lat, lng));
   }
 
   lngDiffRad (lat, lng) {
-    return this.memo(lat, lng, 'lngDiffRad', function (self) {
-      return (self.lngDiff(lat, lng) / 180) * Math.PI;
-    });
+    return this.memo(lat, lng, 'lngDiffRad', (self) => (self.lngDiff(lat, lng) / 180) * Math.PI);
   }
 
   easting (lat, lng) {
-    return this.memo(lat, lng, 'easting', function (self) {
+    return this.memo(lat, lng, 'easting', (self) => {
       const nu = self.nu(lat, lng);
       const lngDiffRad = self.lngDiffRad(lat, lng);
       const cosLat = self.cosLat(lat, lng);
@@ -147,7 +119,7 @@ class Redfearn {
   }
 
   meridianDistance (lat, lng) {
-    return this.memo(lat, lng, 'meridianDistance', function (self) {
+    return this.memo(lat, lng, 'meridianDistance', (self) => {
       const first = self.semiMajorAxis * self.A0 * self.latRad(lat, lng);
       const second = -self.semiMajorAxis * self.A2 * self.sin2Lat(lat, lng);
       const third = self.semiMajorAxis * self.A4 * self.sin4Lat(lat, lng);
@@ -157,7 +129,7 @@ class Redfearn {
   }
 
   northing (lat, lng) {
-    return this.memo(lat, lng, 'northing', function (self) {
+    return this.memo(lat, lng, 'northing', (self) => {
       const cosLat = self.cosLat(lat, lng);
       const lngDiffRad = self.lngDiffRad(lat, lng);
       const nu = self.nu(lat, lng);
@@ -188,7 +160,7 @@ class Redfearn {
   }
 
   gridConvergence (lat, lng) {
-    return this.memo(lat, lng, 'gridConvergence', function (self) {
+    return this.memo(lat, lng, 'gridConvergence', (self) => {
       const cosLat = self.cosLat(lat, lng);
       const lngDiffRad = self.lngDiffRad(lat, lng);
       const psi = self.psi(lat, lng);
@@ -216,7 +188,7 @@ class Redfearn {
   }
 
   pointScaleFactor (lat, lng) {
-    return this.memo(lat, lng, 'pointScaleFactor', function (self) {
+    return this.memo(lat, lng, 'pointScaleFactor', (self) => {
       const cosLat = self.cosLat(lat, lng);
       const tanLat = self.tanLat(lat, lng);
       const lngDiffRad = self.lngDiffRad(lat, lng);
