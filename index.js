@@ -1,4 +1,4 @@
-window.addEventListener('load', function () {
+window.addEventListener('load', () => {
   const head = document.getElementsByTagName('head')[0];
   const script = document.createElement('script');
   script.async = true;
@@ -51,7 +51,7 @@ function processElevationResults (results, polygons) {
   }
   for (let result of results) {
     const hue = normalise(result.elevation, minElevation, maxElevation, 0, 120);
-    const polygon = polygons.find(function (polygon) {
+    const polygon = polygons.find((polygon) => {
       return google.maps.geometry.poly.containsLocation(result.location, polygon);
     });
     polygon.setOptions({fillColor: `hsl(${hue}, 50%, 50%)`});
@@ -61,7 +61,7 @@ function processElevationResults (results, polygons) {
 function createPolygons (map, latGrid, lngGrid, locations) {
   const latHalfGrid = latGrid / 2;
   const lngHalfGrid = lngGrid / 2;
-  return locations.map(function (location) {
+  return locations.map((location) => {
     const lat = location.lat();
     const lng = location.lng();
     const path = [{
@@ -104,7 +104,7 @@ function initMap () {
     strokeWeight: 2
   });
 
-  map.addListener('click', function (event) {
+  map.addListener('click', (event) => {
     if (!complete) {
       path.push(event.latLng.toJSON());
       polygon.setPath(path);
@@ -134,13 +134,13 @@ function initMap () {
         const polygons = createPolygons(map, latGrid, lngGrid, locations);
         const promises = [];
         let batchStart = 0;
-        const intervalId = window.setInterval(function () {
+        const intervalId = window.setInterval(() => {
           if (batchStart < locations.length) {
             const partialLocations = locations.slice(batchStart, batchStart + batchSize);
-            promises.push(new Promise(function (resolve, reject) {
+            promises.push(new Promise((resolve, reject) => {
               service.getElevationForLocations({
                 locations: partialLocations
-              }, function (results, status) {
+              }, (results, status) => {
                 if (status === google.maps.ElevationStatus.OK) {
                   resolve(results);
                 } else {
@@ -151,7 +151,7 @@ function initMap () {
             batchStart += batchSize;
           } else {
             window.clearInterval(intervalId);
-            Promise.all(promises).then(function (results) {
+            Promise.all(promises).then((results) => {
               processElevationResults(results.flat(), polygons);
             });
           }
