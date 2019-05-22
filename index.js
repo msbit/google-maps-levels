@@ -45,16 +45,35 @@ function pathToBounds (accumulator, currentValue) {
 function processElevationResults (results, polygons) {
   let maxElevation = Number.MIN_VALUE;
   let minElevation = Number.MAX_VALUE;
+  let maxResult;
+  let minResult;
   for (let result of results) {
-    maxElevation = Math.max(maxElevation, result.elevation);
-    minElevation = Math.min(minElevation, result.elevation);
+    if (result.elevation > maxElevation) {
+      maxElevation = result.elevation;
+      maxResult = result;
+    }
+    if (result.elevation < minElevation) {
+      minElevation = result.elevation;
+      minResult = result;
+    }
   }
+  let maxPolygon;
+  let minPolygon;
   for (let result of results) {
     const hue = normalise(result.elevation, minElevation, maxElevation, 0, 120);
     const polygon = polygons.find((polygon) => {
       return google.maps.geometry.poly.containsLocation(result.location, polygon);
     });
-    polygon.setOptions({fillColor: `hsl(${hue}, 50%, 50%)`});
+    let saturation = 50;
+    if (result === maxResult) {
+      maxPolygon = polygon;
+      saturation = 100;
+    }
+    if (result === minResult) {
+      minPolygon = polygon;
+      saturation = 100;
+    }
+    polygon.setOptions({fillColor: `hsl(${hue}, ${saturation}%, 50%)`});
   }
 }
 
