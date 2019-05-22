@@ -34,11 +34,13 @@ function partiallyContains (location, polygon, latGrid, lngGrid) {
   return false;
 }
 
-function pathToBounds (accumulator, currentValue) {
-  accumulator.north = Math.max(accumulator.north, currentValue.lat);
-  accumulator.south = Math.min(accumulator.south, currentValue.lat);
-  accumulator.east = Math.max(accumulator.east, currentValue.lng);
-  accumulator.west = Math.min(accumulator.west, currentValue.lng);
+function latLngsToBounds (accumulator, currentValue) {
+  const lat = currentValue.lat();
+  const lng = currentValue.lng();
+  accumulator.north = Math.max(accumulator.north, lat);
+  accumulator.south = Math.min(accumulator.south, lat);
+  accumulator.east = Math.max(accumulator.east, lng);
+  accumulator.west = Math.min(accumulator.west, lng);
   return accumulator;
 }
 
@@ -132,10 +134,10 @@ function initMap () {
 
   map.addListener('click', (event) => {
     if (!complete) {
-      path.push(event.latLng.toJSON());
+      path.push(event.latLng);
       polygon.setPath(path);
       if (path.length > 3) {
-        const bounds = path.reduce(pathToBounds, {
+        const bounds = path.reduce(latLngsToBounds, {
           north: -90,
           south: 90,
           east: -180,
