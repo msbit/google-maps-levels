@@ -75,6 +75,13 @@ function processElevationResults (results, polygons) {
     }
     polygon.setOptions({fillColor: `hsl(${hue}, ${saturation}%, 50%)`});
   }
+  return [{
+    elevation: maxElevation,
+    polygon: maxPolygon
+  }, {
+    elevation: minElevation,
+    polygon: minPolygon
+  }];
 }
 
 function createPolygons (map, latGrid, lngGrid, locations) {
@@ -171,7 +178,17 @@ function initMap () {
           } else {
             window.clearInterval(intervalId);
             Promise.all(promises).then((results) => {
-              processElevationResults(results.flat(), polygons);
+              let [max, min] = processElevationResults(results.flat(), polygons);
+              let maxInfoWindow = new google.maps.InfoWindow({
+                content: max.elevation.toFixed(2),
+                position: max.polygon.latLngs.getAt(0).getAt(0)
+              });
+              let minInfoWindow = new google.maps.InfoWindow({
+                content: min.elevation.toFixed(2),
+                position: min.polygon.latLngs.getAt(0).getAt(0)
+              });
+              maxInfoWindow.open(map);
+              minInfoWindow.open(map);
             });
           }
         }, 500);
