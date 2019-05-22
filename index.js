@@ -34,6 +34,16 @@ function partiallyContains (location, polygon, latGrid, lngGrid) {
   return false;
 }
 
+function midPosition(positions) {
+  const bounds = positions.getArray().reduce(latLngsToBounds, {
+    north: -90,
+    south: 90,
+    east: -180,
+    west: 180
+  });
+  return new google.maps.LatLng((bounds.north + bounds.south) / 2, (bounds.east + bounds.west) / 2);
+}
+
 function latLngsToBounds (accumulator, currentValue) {
   const lat = currentValue.lat();
   const lng = currentValue.lng();
@@ -183,11 +193,11 @@ function initMap () {
               let [max, min] = processElevationResults(results.flat(), polygons);
               let maxInfoWindow = new google.maps.InfoWindow({
                 content: max.elevation.toFixed(2),
-                position: max.polygon.latLngs.getAt(0).getAt(0)
+                position: midPosition(max.polygon.latLngs.getAt(0))
               });
               let minInfoWindow = new google.maps.InfoWindow({
                 content: min.elevation.toFixed(2),
-                position: min.polygon.latLngs.getAt(0).getAt(0)
+                position: midPosition(min.polygon.latLngs.getAt(0))
               });
               maxInfoWindow.open(map);
               minInfoWindow.open(map);
