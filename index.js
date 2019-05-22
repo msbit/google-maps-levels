@@ -34,7 +34,7 @@ function partiallyContains (location, polygon, latGrid, lngGrid) {
   return false;
 }
 
-function midPosition(positions) {
+function midPosition (positions) {
   const bounds = positions.getArray().reduce(latLngsToBounds, {
     north: -90,
     south: 90,
