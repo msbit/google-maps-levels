@@ -8,14 +8,14 @@ window.addEventListener('load', () => {
   head.appendChild(script);
 });
 
-function normalise (input, inputMin, inputMax, outputMin, outputMax) {
+const normalise = (input, inputMin, inputMax, outputMin, outputMax) => {
   const inputRange = inputMax - inputMin;
   const outputRange = outputMax - outputMin;
   const ratio = outputRange / inputRange;
   return ((input - inputMin) * ratio) + outputMin;
-}
+};
 
-function partiallyContains (location, polygon, latGrid, lngGrid) {
+const partiallyContains = (location, polygon, latGrid, lngGrid) => {
   const lat = location.lat();
   const lng = location.lng();
   const latHalfGrid = latGrid / 2;
@@ -32,9 +32,9 @@ function partiallyContains (location, polygon, latGrid, lngGrid) {
     }
   }
   return false;
-}
+};
 
-function midPosition (positions) {
+const midPosition = (positions) => {
   const bounds = positions.getArray().reduce(latLngsToBounds, {
     north: -90,
     south: 90,
@@ -42,9 +42,9 @@ function midPosition (positions) {
     west: 180
   });
   return new google.maps.LatLng((bounds.north + bounds.south) / 2, (bounds.east + bounds.west) / 2);
-}
+};
 
-function latLngsToBounds (accumulator, currentValue) {
+const latLngsToBounds = (accumulator, currentValue) => {
   const lat = currentValue.lat();
   const lng = currentValue.lng();
   accumulator.north = Math.max(accumulator.north, lat);
@@ -52,9 +52,9 @@ function latLngsToBounds (accumulator, currentValue) {
   accumulator.east = Math.max(accumulator.east, lng);
   accumulator.west = Math.min(accumulator.west, lng);
   return accumulator;
-}
+};
 
-function processElevationResults (results, polygons) {
+const processElevationResults = (results, polygons) => {
   let maxElevation = Number.MIN_VALUE;
   let minElevation = Number.MAX_VALUE;
   let maxResult;
@@ -94,9 +94,9 @@ function processElevationResults (results, polygons) {
     elevation: minElevation,
     polygon: minPolygon
   }];
-}
+};
 
-function createPolygons (map, latGrid, lngGrid, locations) {
+const createPolygons = (map, latGrid, lngGrid, locations) => {
   const latHalfGrid = latGrid / 2;
   const lngHalfGrid = lngGrid / 2;
   return locations.map((location) => {
@@ -123,7 +123,7 @@ function createPolygons (map, latGrid, lngGrid, locations) {
       strokeWeight: 0
     });
   });
-}
+};
 
 function initMap () {
   const service = new google.maps.ElevationService();
