@@ -143,69 +143,69 @@ function initMap () {
   });
 
   map.addListener('click', (event) => {
-    if (!complete) {
-      path.push(event.latLng);
-      polygon.setPath(path);
-      if (path.length > 3) {
-        const bounds = path.reduce(latLngsToBounds, {
-          north: -90,
-          south: 90,
-          east: -180,
-          west: 180
-        });
-        const latBound = bounds.north - bounds.south;
-        const lngBound = bounds.east - bounds.west;
-        const latGrid = latBound / 32;
-        const latHalfGrid = latGrid / 2;
-        const lngGrid = lngBound / 32;
-        const lngHalfGrid = lngGrid / 2;
-        const locations = [];
-        for (let lat = bounds.south + latHalfGrid; lat < bounds.north; lat += latGrid) {
-          for (let lng = bounds.west + lngHalfGrid; lng < bounds.east; lng += lngGrid) {
-            const location = new google.maps.LatLng(lat, lng);
-            if (partiallyContains(location, polygon, latGrid, lngGrid)) {
-              locations.push(location);
-            }
-          }
+    if (complete) { return; }
+
+    path.push(event.latLng);
+    polygon.setPath(path);
+    if (path.length < 4) { return; }
+
+    const bounds = path.reduce(latLngsToBounds, {
+      north: -90,
+      south: 90,
+      east: -180,
+      west: 180
+    });
+    const latBound = bounds.north - bounds.south;
+    const lngBound = bounds.east - bounds.west;
+    const latGrid = latBound / 32;
+    const latHalfGrid = latGrid / 2;
+    const lngGrid = lngBound / 32;
+    const lngHalfGrid = lngGrid / 2;
+    const locations = [];
+    for (let lat = bounds.south + latHalfGrid; lat < bounds.north; lat += latGrid) {
+      for (let lng = bounds.west + lngHalfGrid; lng < bounds.east; lng += lngGrid) {
+        const location = new google.maps.LatLng(lat, lng);
+        if (partiallyContains(location, polygon, latGrid, lngGrid)) {
+          locations.push(location);
         }
-        const batchSize = 512;
-        const polygons = createPolygons(map, latGrid, lngGrid, locations);
-        const promises = [];
-        let batchStart = 0;
-        const intervalId = window.setInterval(() => {
-          if (batchStart < locations.length) {
-            const partialLocations = locations.slice(batchStart, batchStart + batchSize);
-            promises.push(new Promise((resolve, reject) => {
-              service.getElevationForLocations({
-                locations: partialLocations
-              }, (results, status) => {
-                if (status === google.maps.ElevationStatus.OK) {
-                  resolve(results);
-                } else {
-                  reject(status);
-                }
-              });
-            }));
-            batchStart += batchSize;
-          } else {
-            window.clearInterval(intervalId);
-            Promise.all(promises).then((results) => {
-              const [max, min] = processElevationResults(results.flat(), polygons);
-              const maxInfoWindow = new google.maps.InfoWindow({
-                content: max.elevation.toFixed(2),
-                position: midPosition(max.polygon.latLngs.getAt(0))
-              });
-              const minInfoWindow = new google.maps.InfoWindow({
-                content: min.elevation.toFixed(2),
-                position: midPosition(min.polygon.latLngs.getAt(0))
-              });
-              maxInfoWindow.open(map);
-              minInfoWindow.open(map);
-            });
-          }
-        }, 500);
-        complete = true;
       }
     }
+    const batchSize = 512;
+    const polygons = createPolygons(map, latGrid, lngGrid, locations);
+    const promises = [];
+    let batchStart = 0;
+    const intervalId = window.setInterval(() => {
+      if (batchStart < locations.length) {
+        const partialLocations = locations.slice(batchStart, batchStart + batchSize);
+        promises.push(new Promise((resolve, reject) => {
+          service.getElevationForLocations({
+            locations: partialLocations
+          }, (results, status) => {
+            if (status === google.maps.ElevationStatus.OK) {
+              resolve(results);
+            } else {
+              reject(status);
+            }
+          });
+        }));
+        batchStart += batchSize;
+      } else {
+        window.clearInterval(intervalId);
+        Promise.all(promises).then((results) => {
+          const [max, min] = processElevationResults(results.flat(), polygons);
+          const maxInfoWindow = new google.maps.InfoWindow({
+            content: max.elevation.toFixed(2),
+            position: midPosition(max.polygon.latLngs.getAt(0))
+          });
+          const minInfoWindow = new google.maps.InfoWindow({
+            content: min.elevation.toFixed(2),
+            position: midPosition(min.polygon.latLngs.getAt(0))
+          });
+          maxInfoWindow.open(map);
+          minInfoWindow.open(map);
+        });
+      }
+    }, 500);
+    complete = true;
   });
 }
