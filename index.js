@@ -23,22 +23,22 @@ const scale = (inputMin, inputMax, outputMin, outputMax) => {
   return input => ((input - inputMin) * ratio) + outputMin;
 };
 
-const contains = (location, polygon, latGrid, lngGrid) => {
+const contains = (location, polygon, latSq, lngSq) => {
   const lat = location.lat();
   const lng = location.lng();
-  const latHalfGrid = latGrid / 2;
-  const lngHalfGrid = lngGrid / 2;
+  const latHalfSq = latSq / 2;
+  const lngHalfSq = lngSq / 2;
   const corners = [
-    new gm.LatLng(lat + latHalfGrid, lng - lngHalfGrid),
-    new gm.LatLng(lat + latHalfGrid, lng + lngHalfGrid),
-    new gm.LatLng(lat - latHalfGrid, lng + lngHalfGrid),
-    new gm.LatLng(lat - latHalfGrid, lng - lngHalfGrid)
+    new gm.LatLng(lat + latHalfSq, lng - lngHalfSq),
+    new gm.LatLng(lat + latHalfSq, lng + lngHalfSq),
+    new gm.LatLng(lat - latHalfSq, lng + lngHalfSq),
+    new gm.LatLng(lat - latHalfSq, lng - lngHalfSq)
   ];
   return corners.find(c => gmgp.containsLocation(c, polygon)) !== undefined;
 };
 
-const centre = (positions) => {
-  const bounds = positions.getArray().reduce(latLngsToBounds, {
+const centre = (locations) => {
+  const bounds = locations.getArray().reduce(toBounds, {
     north: -90,
     south: 90,
     east: -180,
@@ -47,14 +47,14 @@ const centre = (positions) => {
   return new gm.LatLng((bounds.north + bounds.south) / 2, (bounds.east + bounds.west) / 2);
 };
 
-const latLngsToBounds = (accumulator, currentValue) => {
-  const lat = currentValue.lat();
-  const lng = currentValue.lng();
-  accumulator.north = Math.max(accumulator.north, lat);
-  accumulator.south = Math.min(accumulator.south, lat);
-  accumulator.east = Math.max(accumulator.east, lng);
-  accumulator.west = Math.min(accumulator.west, lng);
-  return accumulator;
+const toBounds = (bounds, location) => {
+  const lat = location.lat();
+  const lng = location.lng();
+  bounds.north = Math.max(bounds.north, lat);
+  bounds.south = Math.min(bounds.south, lat);
+  bounds.east = Math.max(bounds.east, lng);
+  bounds.west = Math.min(bounds.west, lng);
+  return bounds;
 };
 
 const processElevationResults = (results, polygons) => {
@@ -100,24 +100,24 @@ const processElevationResults = (results, polygons) => {
   }];
 };
 
-const createPolygons = (map, latGrid, lngGrid, locations) => {
-  const latHalfGrid = latGrid / 2;
-  const lngHalfGrid = lngGrid / 2;
+const createPolygons = (map, latSq, lngSq, locations) => {
+  const latHalfSq = latSq / 2;
+  const lngHalfSq = lngSq / 2;
   return locations.map((location) => {
     const lat = location.lat();
     const lng = location.lng();
     const path = [{
-      lat: lat + latHalfGrid,
-      lng: lng - lngHalfGrid
+      lat: lat + latHalfSq,
+      lng: lng - lngHalfSq
     }, {
-      lat: lat + latHalfGrid,
-      lng: lng + lngHalfGrid
+      lat: lat + latHalfSq,
+      lng: lng + lngHalfSq
     }, {
-      lat: lat - latHalfGrid,
-      lng: lng + lngHalfGrid
+      lat: lat - latHalfSq,
+      lng: lng + lngHalfSq
     }, {
-      lat: lat - latHalfGrid,
-      lng: lng - lngHalfGrid
+      lat: lat - latHalfSq,
+      lng: lng - lngHalfSq
     }];
     return new gm.Polygon({
       fillOpacity: 0.5,
@@ -167,7 +167,7 @@ function initMap () {
     polygon.setPath(path);
     if (path.length < 4) { return; }
 
-    const bounds = path.reduce(latLngsToBounds, {
+    const bounds = path.reduce(toBounds, {
       north: -90,
       south: 90,
       east: -180,
@@ -175,22 +175,22 @@ function initMap () {
     });
     const latBound = bounds.north - bounds.south;
     const lngBound = bounds.east - bounds.west;
-    const latGrid = latBound / 32;
-    const latHalfGrid = latGrid / 2;
-    const lngGrid = lngBound / 32;
-    const lngHalfGrid = lngGrid / 2;
+    const latSq = latBound / 32;
+    const latHalfSq = latSq / 2;
+    const lngSq = lngBound / 32;
+    const lngHalfSq = lngSq / 2;
     const locations = [];
-    for (let lat = bounds.south + latHalfGrid; lat < bounds.north; lat += latGrid) {
-      for (let lng = bounds.west + lngHalfGrid; lng < bounds.east; lng += lngGrid) {
+    for (let lat = bounds.south + latHalfSq; lat < bounds.north; lat += latSq) {
+      for (let lng = bounds.west + lngHalfSq; lng < bounds.east; lng += lngSq) {
         const location = new gm.LatLng(lat, lng);
-        if (contains(location, polygon, latGrid, lngGrid)) {
-          locations.push(location);
-        }
+        if (!contains(location, polygon, latSq, lngSq)) { continue; }
+
+        locations.push(location);
       }
     }
 
     const batchSize = 256;
-    const polygons = createPolygons(map, latGrid, lngGrid, locations);
+    const polygons = createPolygons(map, latSq, lngSq, locations);
     const promises = [];
     let batchStart = 0;
     const intervalId = window.setInterval(async () => {
