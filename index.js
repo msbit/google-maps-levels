@@ -129,17 +129,15 @@ const createPolygons = (map, latSq, lngSq, locations) => {
   });
 };
 
-const queueRequest = (service, locations, promises) => {
-  promises.push(new Promise((resolve, reject) => {
-    service.getElevationForLocations({ locations }, (results, status) => {
-      if (status === gm.ElevationStatus.OK) {
-        resolve(results);
-      } else {
-        reject(status);
-      }
-    });
-  }));
-};
+const request = (service, locations) => new Promise((resolve, reject) => {
+  service.getElevationForLocations({ locations }, (results, status) => {
+    if (status === gm.ElevationStatus.OK) {
+      resolve(results);
+    } else {
+      reject(status);
+    }
+  });
+});
 
 function initMap () {
   globalThis.gm = google.maps;
@@ -160,7 +158,7 @@ function initMap () {
     strokeWeight: 2
   });
 
-  map.addListener('click', (event) => {
+  map.addListener('click', async (event) => {
     if (complete) { return; }
 
     path.push(event.latLng);
@@ -189,34 +187,25 @@ function initMap () {
       }
     }
 
-    const batchSize = 256;
+    const batch = 256;
     const polygons = createPolygons(map, latSq, lngSq, locations);
-    const promises = [];
-    let batchStart = 0;
-    const intervalId = window.setInterval(async () => {
-      if (batchStart < locations.length) {
-        queueRequest(service, locations.slice(batchStart, batchStart + batchSize), promises);
-        batchStart += batchSize;
+    const results = [];
 
-        return;
-      }
+    for (let i = 0; i < locations.length; i += batch) {
+      results.push(await request(service, locations.slice(i, i + batch)));
+    }
 
-      window.clearInterval(intervalId);
+    const [max, min] = processElevationResults(results.flat(), polygons);
 
-      const results = await Promise.all(promises);
+    new gm.InfoWindow({
+      content: max.elevation.toFixed(2),
+      position: centre(max.polygon.latLngs.getAt(0))
+    }).open(map);
 
-      const [max, min] = processElevationResults(results.flat(), polygons);
-
-      new gm.InfoWindow({
-        content: max.elevation.toFixed(2),
-        position: centre(max.polygon.latLngs.getAt(0))
-      }).open(map);
-
-      new gm.InfoWindow({
-        content: min.elevation.toFixed(2),
-        position: centre(min.polygon.latLngs.getAt(0))
-      }).open(map);
-    }, 500);
+    new gm.InfoWindow({
+      content: min.elevation.toFixed(2),
+      position: centre(min.polygon.latLngs.getAt(0))
+    }).open(map);
     complete = true;
   });
 }
