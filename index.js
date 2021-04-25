@@ -26,7 +26,7 @@ function partiallyContains (location, polygon, latGrid, lngGrid) {
     new google.maps.LatLng(lat - latHalfGrid, lng + lngHalfGrid),
     new google.maps.LatLng(lat - latHalfGrid, lng - lngHalfGrid)
   ];
-  for (let corner of corners) {
+  for (const corner of corners) {
     if (google.maps.geometry.poly.containsLocation(corner, polygon)) {
       return true;
     }
@@ -59,7 +59,7 @@ function processElevationResults (results, polygons) {
   let minElevation = Number.MAX_VALUE;
   let maxResult;
   let minResult;
-  for (let result of results) {
+  for (const result of results) {
     if (result.elevation > maxElevation) {
       maxElevation = result.elevation;
       maxResult = result;
@@ -71,7 +71,7 @@ function processElevationResults (results, polygons) {
   }
   let maxPolygon;
   let minPolygon;
-  for (let result of results) {
+  for (const result of results) {
     const hue = normalise(result.elevation, minElevation, maxElevation, 0, 120);
     const polygon = polygons.find((polygon) => {
       return google.maps.geometry.poly.containsLocation(result.location, polygon);
@@ -85,7 +85,7 @@ function processElevationResults (results, polygons) {
       minPolygon = polygon;
       saturation = 100;
     }
-    polygon.setOptions({fillColor: `hsl(${hue}, ${saturation}%, 50%)`});
+    polygon.setOptions({ fillColor: `hsl(${hue}, ${saturation}%, 50%)` });
   }
   return [{
     elevation: maxElevation,
@@ -128,7 +128,7 @@ function createPolygons (map, latGrid, lngGrid, locations) {
 function initMap () {
   const service = new google.maps.ElevationService();
   const map = new google.maps.Map(document.getElementById('map'), {
-    center: {lat: -37.554082, lng: 144.046702},
+    center: { lat: -37.554082, lng: 144.046702 },
     zoom: 19
   });
   let complete = false;
@@ -190,12 +190,12 @@ function initMap () {
           } else {
             window.clearInterval(intervalId);
             Promise.all(promises).then((results) => {
-              let [max, min] = processElevationResults(results.flat(), polygons);
-              let maxInfoWindow = new google.maps.InfoWindow({
+              const [max, min] = processElevationResults(results.flat(), polygons);
+              const maxInfoWindow = new google.maps.InfoWindow({
                 content: max.elevation.toFixed(2),
                 position: midPosition(max.polygon.latLngs.getAt(0))
               });
-              let minInfoWindow = new google.maps.InfoWindow({
+              const minInfoWindow = new google.maps.InfoWindow({
                 content: min.elevation.toFixed(2),
                 position: midPosition(min.polygon.latLngs.getAt(0))
               });
