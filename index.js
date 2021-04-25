@@ -4,7 +4,7 @@ window.addEventListener('load', () => {
 
   script.async = true;
   script.defer = true;
-  script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&callback=initMap`;
+  script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&callback=initMap&libraries=geometry`;
   script.type = 'text/javascript';
 
   head.appendChild(script);
@@ -23,17 +23,12 @@ const contains = (location, polygon, latGrid, lngGrid) => {
   const latHalfGrid = latGrid / 2;
   const lngHalfGrid = lngGrid / 2;
   const corners = [
-    new google.maps.LatLng(lat + latHalfGrid, lng - lngHalfGrid),
-    new google.maps.LatLng(lat + latHalfGrid, lng + lngHalfGrid),
-    new google.maps.LatLng(lat - latHalfGrid, lng + lngHalfGrid),
-    new google.maps.LatLng(lat - latHalfGrid, lng - lngHalfGrid)
+    new gm.LatLng(lat + latHalfGrid, lng - lngHalfGrid),
+    new gm.LatLng(lat + latHalfGrid, lng + lngHalfGrid),
+    new gm.LatLng(lat - latHalfGrid, lng + lngHalfGrid),
+    new gm.LatLng(lat - latHalfGrid, lng - lngHalfGrid)
   ];
-  for (const corner of corners) {
-    if (google.maps.geometry.poly.containsLocation(corner, polygon)) {
-      return true;
-    }
-  }
-  return false;
+  return corners.find(c => gmgp.containsLocation(c, polygon)) !== undefined;
 };
 
 const centre = (positions) => {
@@ -43,7 +38,7 @@ const centre = (positions) => {
     east: -180,
     west: 180
   });
-  return new google.maps.LatLng((bounds.north + bounds.south) / 2, (bounds.east + bounds.west) / 2);
+  return new gm.LatLng((bounds.north + bounds.south) / 2, (bounds.east + bounds.west) / 2);
 };
 
 const latLngsToBounds = (accumulator, currentValue) => {
@@ -77,9 +72,7 @@ const processElevationResults = (results, polygons) => {
   let minPolygon;
   for (const result of results) {
     const hue = normalise(result.elevation, minElevation, maxElevation, 0, 120);
-    const polygon = polygons.find((polygon) => {
-      return google.maps.geometry.poly.containsLocation(result.location, polygon);
-    });
+    const polygon = polygons.find(p => gmgp.containsLocation(result.location, p));
     let saturation = 50;
     if (result === maxResult) {
       maxPolygon = polygon;
@@ -119,7 +112,7 @@ const createPolygons = (map, latGrid, lngGrid, locations) => {
       lat: lat - latHalfGrid,
       lng: lng - lngHalfGrid
     }];
-    return new google.maps.Polygon({
+    return new gm.Polygon({
       fillOpacity: 0.5,
       geodesic: true,
       map: map,
@@ -132,7 +125,7 @@ const createPolygons = (map, latGrid, lngGrid, locations) => {
 const queueRequest = (service, locations, promises) => {
   promises.push(new Promise((resolve, reject) => {
     service.getElevationForLocations({ locations }, (results, status) => {
-      if (status === google.maps.ElevationStatus.OK) {
+      if (status === gm.ElevationStatus.OK) {
         resolve(results);
       } else {
         reject(status);
@@ -142,14 +135,16 @@ const queueRequest = (service, locations, promises) => {
 };
 
 function initMap () {
-  const service = new google.maps.ElevationService();
-  const map = new google.maps.Map(document.getElementById('map'), {
-    center: { lat: -37.554082, lng: 144.046702 },
-    zoom: 19
-  });
+  globalThis.gm = google.maps;
+  globalThis.gmgp = google.maps.geometry.poly;
+
+  const service = new gm.ElevationService();
+  const center = { lat: -37.554082, lng: 144.046702 };
+  const zoom = 19;
+  const map = new gm.Map(document.getElementById('map'), { center, zoom });
   let complete = false;
   const path = [];
-  const polygon = new google.maps.Polygon({
+  const polygon = new gm.Polygon({
     geodesic: true,
     map,
     fillOpacity: 0.0,
@@ -180,7 +175,7 @@ function initMap () {
     const locations = [];
     for (let lat = bounds.south + latHalfGrid; lat < bounds.north; lat += latGrid) {
       for (let lng = bounds.west + lngHalfGrid; lng < bounds.east; lng += lngGrid) {
-        const location = new google.maps.LatLng(lat, lng);
+        const location = new gm.LatLng(lat, lng);
         if (contains(location, polygon, latGrid, lngGrid)) {
           locations.push(location);
         }
@@ -205,12 +200,12 @@ function initMap () {
 
       const [max, min] = processElevationResults(results.flat(), polygons);
 
-      new google.maps.InfoWindow({
+      new gm.InfoWindow({
         content: max.elevation.toFixed(2),
         position: centre(max.polygon.latLngs.getAt(0))
       }).open(map);
 
-      new google.maps.InfoWindow({
+      new gm.InfoWindow({
         content: min.elevation.toFixed(2),
         position: centre(min.polygon.latLngs.getAt(0))
       }).open(map);
