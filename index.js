@@ -15,11 +15,12 @@ window.addEventListener('load', () => {
   head.appendChild(script);
 });
 
-const normalise = (input, inputMin, inputMax, outputMin, outputMax) => {
+const scale = (inputMin, inputMax, outputMin, outputMax) => {
   const inputRange = inputMax - inputMin;
   const outputRange = outputMax - outputMin;
   const ratio = outputRange / inputRange;
-  return ((input - inputMin) * ratio) + outputMin;
+
+  return input => ((input - inputMin) * ratio) + outputMin;
 };
 
 const contains = (location, polygon, latGrid, lngGrid) => {
@@ -75,8 +76,9 @@ const processElevationResults = (results, polygons) => {
 
   let maxPolygon;
   let minPolygon;
+  const scaler = scale(minElevation, maxElevation, 0, 120);
   for (const result of results) {
-    const hue = normalise(result.elevation, minElevation, maxElevation, 0, 120);
+    const hue = scaler(result.elevation);
     const polygon = polygons.find(p => gmgp.containsLocation(result.location, p));
     let saturation = 50;
     if (result === maxResult) {
