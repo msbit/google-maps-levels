@@ -1,6 +1,6 @@
-window.addEventListener('load', () => {
-  const head = document.getElementsByTagName('head')[0];
-  const script = document.createElement('script');
+self.addEventListener('load', ({ target }) => {
+  const head = target.getElementsByTagName('head')[0];
+  const script = target.createElement('script');
 
   const url = new URL('https://maps.googleapis.com/maps/api/js');
   url.searchParams.set('callback', 'initMap');
@@ -26,16 +26,15 @@ const scale = (inputMin, inputMax, outputMin, outputMax) => {
 const contains = ({ lat, lng }, polygon, latSq, lngSq) => {
   const latHalfSq = latSq / 2;
   const lngHalfSq = lngSq / 2;
-  const corners = [
+  return [
     new gm.LatLng(lat() + latHalfSq, lng() - lngHalfSq),
     new gm.LatLng(lat() + latHalfSq, lng() + lngHalfSq),
     new gm.LatLng(lat() - latHalfSq, lng() + lngHalfSq),
     new gm.LatLng(lat() - latHalfSq, lng() - lngHalfSq)
-  ];
-  return corners.find(c => gmgp.containsLocation(c, polygon)) !== undefined;
+  ].find(c => gmgp.containsLocation(c, polygon)) !== undefined;
 };
 
-const centre = (locations) => {
+const centre = locations => {
   const { n, s, e, w } = locations.getArray().reduce(toBounds, {
     n: -90,
     s: 90,
@@ -87,7 +86,7 @@ const processElevationResults = (results, polygons) => {
 const createPolygons = (map, latSq, lngSq, locations) => {
   const latHalfSq = latSq / 2;
   const lngHalfSq = lngSq / 2;
-  return locations.map((location) => {
+  return locations.map(location => {
     const lat = location.lat();
     const lng = location.lng();
     const path = [{
@@ -124,8 +123,8 @@ const request = (service, locations) => new Promise((resolve, reject) => {
 });
 
 function initMap () {
-  globalThis.gm = google.maps;
-  globalThis.gmgp = google.maps.geometry.poly;
+  self.gm = google.maps;
+  self.gmgp = google.maps.geometry.poly;
 
   const service = new gm.ElevationService();
   const center = { lat: -37.554082, lng: 144.046702 };
